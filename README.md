@@ -2,5 +2,6 @@
 A React Hook supporting lensed atom.
 
 # TODO
-- [ ] rewrite with TypeScript
-- [ ] more convenient utils
+- [x] rewrite with TypeScript
+- [x] more convenient utils
+- [ ] docs
