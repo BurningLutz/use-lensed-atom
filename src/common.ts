@@ -66,7 +66,7 @@ export function lift<S, A>(lens: Lens<S, A>): Lens<Opt<S>, Opt<A>> {
       if (target === undefined) {
         return Identity(undefined)
       } else {
-        return lens(a => R.map(R.defaultTo(a), toFunctorFn(a)))(target)
+        return lens(a => R.map(x => x === undefined ? a : x, toFunctorFn(a)))(target)
       }
     }
   }
