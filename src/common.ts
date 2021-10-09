@@ -1,12 +1,10 @@
-import { Functor, Lens } from "ramda"
-import * as R from "ramda"
-
+import { _f } from "."
 import * as Sym from "./symbol"
-import { Opt } from "./type"
+import { Either } from "./type"
 
 
 // A modified version of `Object.is`
-export function is(x: any, y: any): boolean {
+function is(x: any, y: any): boolean {
   if (x[Sym.atom] === Sym.atom && y[Sym.atom] === Sym.atom) {
     x = x.get()
     y = y.get()
@@ -52,33 +50,40 @@ export function shallowEqual(objA: any, objB: any): boolean {
   return true
 }
 
-export function Identity<U>(x: U): Functor<U> {
+export function left<A, B>(a: A): Either<A, B> {
   return {
-    value: x,
-    "fantasy-land/map": f => Identity(f(x))
+    kind  : "Left",
+    value : a
   }
 }
 
-// lift a lens to a partial lens
-export function lift<S, A>(lens: Lens<S, A>): Lens<Opt<S>, Opt<A>> {
-  return function (toFunctorFn) {
-    return function (target) {
-      if (target === undefined) {
-        return Identity(undefined)
-      } else {
-        return lens(a => R.map(x => x === undefined ? a : x, toFunctorFn(a)))(target)
-      }
-    }
+export function right<A, B>(b: B): Either<A, B> {
+  return {
+    kind  : "Right",
+    value : b
   }
 }
-export function lift_<S, A>(lens: Lens<S, Opt<A>>): Lens<Opt<S>, Opt<A>> {
-  return function (toFunctorFn) {
-    return function (target) {
-      if (target === undefined) {
-        return Identity(undefined)
-      } else {
-        return lens(toFunctorFn)(target)
-      }
-    }
+
+export function updateAt<A>(i: number, x: A, xs: A[]): A[] {
+  let xs_ = xs
+
+  if (i < xs.length) {
+    xs_ = xs.slice(0)
+    xs_[i] = x
   }
+
+  return xs_
+}
+
+export function updateAtKey<A>(k: string, x: A, mx: Record<string, A>): Record<string, A> {
+  const mx_ = {...mx, [k]: x}
+
+  return mx_
+}
+
+export function deleteAtKey<A>(k: string, mx: Record<string, A>): Record<string, A> {
+  const mx_ = {...mx}
+  delete mx_[k]
+
+  return mx_
 }

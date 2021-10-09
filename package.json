@@ -29,12 +29,10 @@
   },
   "homepage": "https://github.com/BurningLutz/use-lensed-atom#readme",
   "peerDependencies": {
-    "ramda": ">=0.16.0",
     "react": ">=16.8.0"
   },
   "devDependencies": {
     "@types/mocha": "^8.2.3",
-    "@types/ramda": "^0.27.41",
     "@types/react": "^17.0.11",
     "fast-check": "^2.17.0",
     "ts-mocha": "^8.0.0",

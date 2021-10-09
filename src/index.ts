@@ -1,5 +1,5 @@
+export { destructure, toList, toEntries } from "./atom"
 export { useAtom } from "./useAtom"
-export { lift, lift_ } from "./common"
 export { memo } from "./memo"
-export * from "./lens"
+export * from "./optic"
 export * from "./type"
