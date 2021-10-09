@@ -1,0 +1,93 @@
+body {
+  font-size: 14px;
+}
+
+input {
+  outline: none;
+}
+
+button.link {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: blue;
+
+  cursor: pointer;
+}
+
+button.active {
+  color: lightgray;
+  cursor: auto;
+}
+
+.hr {
+  color: lightgray;
+}
+
+.flex {
+  display: flex;
+}
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+.grow {
+  flex-grow: 1;
+}
+.align-center {
+  align-items: center;
+}
+.align-start {
+  align-items: flex-start;
+}
+.justify-center {
+  justify-content: center;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.justify-end {
+  justify-content: end;
+}
+
+.app {
+  margin: auto;
+  margin-top: 100px;
+
+  width: 800px;
+  height: 600px;
+}
+
+.title {
+  margin-left: 4px;
+}
+.title-input {
+  font-size: 14px;
+  padding: 2px;
+  margin-right: 16px;
+}
+
+.goods-list {
+  margin-top: 40px;
+  border: 1px solid gray;
+  padding: 20px 0;
+}
+
+.goods-label {
+  width: 100px;
+  min-height: 60px;
+}
+
+.goods {
+  list-style: none;
+  padding: 0;
+  margin: 2px 0;
+  margin-right: 16px;
+  align-self: stretch;
+}
+.goods-item {
+  margin: 6px 0;
+}
+.goods-action {
+  width: 80px;
+}
