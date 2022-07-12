@@ -1,127 +1,168 @@
-import { AffineTraversal, Either, Lens, Opt } from "./type"
-import { deleteAtKey, left, right, updateAt, updateAtKey } from "./common"
+import { HKT, Kind } from "./hkt"
+import { Functor, Applicative } from "./typeclass"
+import { Const, ConstFunctor } from "./Const"
+import { Identity, IdentityApplicative } from "./Identity"
 
-export function _f<S, F extends keyof S>(field: F): Lens<S, S[F]> {
-  return lens(
-    (s) => s[field],
-    (s, a) => ({...s, [field]: a}),
-  )
+
+type Opt<A> = NonNullable<A> | undefined
+
+
+export type LensLike<S, T, A, B, F extends HKT>
+  =  (f: (a: A) => Kind<F, B>)
+  => (s: S)
+  => Kind<F, T>
+
+
+export type Lens<S, T, A, B> =  <F extends HKT>(ins: Functor<F>)
+                             => LensLike<S, T, A, B, F>
+export type Lens_<S, A> = Lens<S, S, A, A>
+
+
+export type Traversal<S, T, A, B> =  <F extends HKT>(ins: Applicative<F>)
+                                  => LensLike<S, T, A, B, F>
+export type Traversal_<S, A> = Traversal<S, S, A, A>
+
+
+export function compose<A, B, C>(f: (a: B) => C, g: (b: A) => B): (a: A) => C {
+  return a => f(g(a))
 }
 
-export function ix<A>(i: number): AffineTraversal<A[], A>
-export function ix<A>(i: string): AffineTraversal<Record<string, A>, A>
-export function ix<A>(i: number | string): AffineTraversal<A[], A> | AffineTraversal<Record<string, A>, A> {
-  if (typeof i === "number") {
-    return affineTraversal<A[], A>(
-      (xs) => i < 0 || i >= xs.length ? left(xs) : right(xs[i]),
-      (xs, x) => updateAt(i, x, xs),
-    )
-  }
 
-  return affineTraversal<Record<string, A>, A>(
-    (mx) => i in mx ? right(mx[i]) : left(mx),
-    (mx, x) => updateAtKey(i, x, mx),
-  )
+export function lens<S, T, A, B>(getter: (s: S) => A, setter: (s: S) => (b: B) => T): Lens<S, T, A, B> {
+  const ret =  <F extends HKT>
+               (ins: Functor<F>
+          ) => (f: (a: A) => Kind<F, B>
+          ) => (s: S
+          ) => {
+            return ins.fmap(setter(s))(f(getter(s)))
+          }
+
+  return ret
 }
 
-export function at<A>(k: string): Lens<Record<string, A>, Opt<A>> {
-  return lens(
-    (s) => k in s ? s[k] : undefined,
-    (s, a) => a === undefined ? deleteAtKey(k, s) : updateAtKey(k, a, s)
-  )
+
+export function view<S, A>(l: Lens<S, S, A, A>, s: S): A {
+  return l(ConstFunctor<A>())(Const)(s).getConst
 }
 
-export function opt<S>(): AffineTraversal<Opt<S>, S> {
-  return affineTraversal(
-    (s) => s === undefined ? left(s) : right(s),
-    (_, a) => a,
-  )
+
+export function set<S, T, A, B>(l: Traversal<S, T, A, B>, b: B, s: S): T {
+  return l(IdentityApplicative)(() => Identity(b))(s).getIdentity
 }
 
-export function lens<S, A>(get: (s: S) => A, set: (s: S, a: A) => S): Lens<S, A> {
-  return { kind : "Lens", get, set }
+
+export function f<K extends keyof R, R>(k: K): Lens<R, R, R[K], R[K]> {
+  return lens<R, R, R[K], R[K]>(r => r[k], r => b => ({ ...r, [k]: b }))
 }
 
-export function affineTraversal<S, A>(match: (s: S) => Either<S, A>, update: (s: S, a: A) => S): AffineTraversal<S, A> {
-  return { kind : "AffineTraversal", match, update }
-}
 
-export function lensToAffineTraversal<S, A>(optic: Lens<S, A>): AffineTraversal<S, A> {
-  return affineTraversal(s => right(optic.get(s)), optic.set)
-}
+export function ix<A>(k: number): Traversal_<A[], A>
+export function ix<A>(k: string): Traversal_<Record<string, A>, A>
+export function ix<A>(k: number | string): Traversal_<A[], A> | Traversal_<Record<string, A>, A> {
+  if (typeof k === "number") {
+    const ret =  <F extends HKT>
+                 (ins: Applicative<F>
+            ) => (f: (a: A) => Kind<F, A>
+            ) => (s: A[]
+            ) => {
+              if (k in s) {
+                return ins.fmap((v: A) => {
+                  const t = s.slice(0)
+                  t[k]    = v
 
-export function composeLens<S, A, T>(opticL: Lens<S, A>, opticR: Lens<A, T>): Lens<S, T> {
-  return lens(
-    (s)    => opticR.get(opticL.get(s)),
-    (s, v) => opticL.set(s, opticR.set(opticL.get(s), v))
-  )
-}
+                  return t
+                })(f(s[k]))
+              } else {
+                return ins.pure(s)
+              }
+            }
 
-export function composeAffineTraversal<S, A, T>(opticL: AffineTraversal<S, A>, opticR: AffineTraversal<A, T>): AffineTraversal<S, T> {
-  function match(s: S): Either<S, T> {
-    const ei0 = opticL.match(s)
-
-    if (ei0.kind === "Left") {
-      return ei0
-    }
-
-    const ei1 = opticR.match(ei0.value)
-
-    if (ei1.kind === "Left") {
-      return left(s)
-    }
-
-    return ei1
-  }
-
-  function update(s: S, t: T): S {
-    const ei0 = opticL.match(s)
-
-    if (ei0.kind === "Left") {
-      return ei0.value
-    }
-
-    return opticL.update(s, opticR.update(ei0.value, t))
-  }
-
-  return affineTraversal(
-    match,
-    update
-  )
-}
-
-export function view<S, A>(optic: Lens<S, A>, s: S): A {
-  return optic.get(s)
-}
-
-export function preview<S, A>(optic: AffineTraversal<S, A>, s: S): Opt<A> {
-  const ei = optic.match(s)
-
-  if (ei.kind === "Left") {
-    return undefined
-  }
-
-  return ei.value
-}
-
-export function set<S, A>(optic: Lens<S, A> | AffineTraversal<S, A>, a: A, s: S): S {
-  if (optic.kind === "Lens") {
-    return optic.set(s, a)
+    return ret
   } else {
-    return optic.update(s, a)
+    const ret =  <F extends HKT>
+                 (ins: Applicative<F>
+            ) => (f: (a: A) => Kind<F, A>
+            ) => (s: Record<string, A>
+            ) => {
+              if (k in s) {
+                return ins.fmap((v: A) => {
+                  const t = Object.assign({}, s)
+                  t[k]    = v
+
+                  return t
+                })(f(s[k]))
+              } else {
+                return ins.pure(s)
+              }
+            }
+
+    return ret
   }
 }
 
-export function over<S, A>(optic: Lens<S, A> | AffineTraversal<S, A>, f: (a: A) => A, s: S): S {
-  if (optic.kind === "Lens") {
-    return optic.set(s, f(optic.get(s)))
+
+export function at<A>(k: number): Lens_<NonNullable<A>[], Opt<A>>
+export function at<A>(k: string): Lens_<Record<string, NonNullable<A>>, Opt<A>>
+export function at<A>(k: number | string): Lens_<NonNullable<A>[], Opt<A>> | Lens_<Record<string, NonNullable<A>>, Opt<A>> {
+  if (typeof k === "number") {
+    const ret =  <F extends HKT>
+                 (ins: Functor<F>
+            ) => (f: (a: Opt<A>) => Kind<F, Opt<A>>
+            ) => (s: NonNullable<A>[]
+            ) => {
+              return ins.fmap((v: Opt<A>) => {
+                const t = s.slice(0)
+
+                if (v === undefined) {
+                  delete t[k]
+                } else {
+                  t[k] = v
+                }
+
+                return t
+              })(f(s[k]))
+            }
+
+    return ret
+  } else {
+    const ret =  <F extends HKT>
+                 (ins: Functor<F>
+            ) => (f: (a: Opt<A>) => Kind<F, Opt<A>>
+            ) => (s: Record<string, NonNullable<A>>
+            ) => {
+              return ins.fmap((v: Opt<A>) => {
+                const t = Object.assign({}, s)
+
+                if (v === undefined) {
+                  delete t[k]
+                } else {
+                  t[k] = v
+                }
+
+                return t
+              })(f(s[k]))
+            }
+
+    return ret
   }
-
-  const ei = optic.match(s)
-
-  if (ei.kind === "Left") {
-    return ei.value
-  }
-
-  return optic.update(s, f(ei.value))
 }
+
+
+interface User {
+  phones: string[]
+  addr: {
+    name: string
+  }
+}
+
+const u: User = {
+  phones: [ "13"
+          , "412"
+          , "sdfd"
+          ]
+  addr: {
+    name: "fsdgf"
+  }
+}
+
+console.log(set(compose(f("addr"), f("name")), "sdg", u))
