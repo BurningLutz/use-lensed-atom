@@ -1,25 +1,25 @@
 import { HKT, Kind } from "./hkt"
-import { Functor, Applicative } from "./typeclass"
-import { Const, ConstFunctor } from "./Const"
+import { Functor, Applicative, Monoid } from "./typeclass"
+import { Const, ConstFunctor, ConstApplicative } from "./Const"
 import { Identity, IdentityApplicative } from "./Identity"
 
 
 type Opt<A> = NonNullable<A> | undefined
 
 
-export type LensLike<S, T, A, B, F extends HKT>
+export type LensLike<F extends HKT, S, T, A, B>
   =  (f: (a: A) => Kind<F, B>)
   => (s: S)
   => Kind<F, T>
 
 
 export type Lens<S, T, A, B> =  <F extends HKT>(ins: Functor<F>)
-                             => LensLike<S, T, A, B, F>
+                             => LensLike<F, S, T, A, B>
 export type Lens_<S, A> = Lens<S, S, A, A>
 
 
 export type Traversal<S, T, A, B> =  <F extends HKT>(ins: Applicative<F>)
-                                  => LensLike<S, T, A, B, F>
+                                  => LensLike<F, S, T, A, B>
 export type Traversal_<S, A> = Traversal<S, S, A, A>
 
 
@@ -38,16 +38,6 @@ export function lens<S, T, A, B>(getter: (s: S) => A, setter: (s: S) => (b: B) =
           }
 
   return ret
-}
-
-
-export function view<S, A>(l: Lens<S, S, A, A>, s: S): A {
-  return l(ConstFunctor<A>())(Const)(s).getConst
-}
-
-
-export function set<S, T, A, B>(l: Traversal<S, T, A, B>, b: B, s: S): T {
-  return l(IdentityApplicative)(() => Identity(b))(s).getIdentity
 }
 
 
@@ -148,21 +138,46 @@ export function at<A>(k: number | string): Lens_<NonNullable<A>[], Opt<A>> | Len
 }
 
 
-interface User {
-  phones: string[]
-  addr: {
-    name: string
+export function view<S, A>(l: Lens_<S, A>, s: S): A {
+  return l(ConstFunctor<A>())(Const)(s).getConst
+}
+
+
+export function set<S, T, A, B>(l: Traversal<S, T, A, B>, b: B, s: S): T {
+  return l(IdentityApplicative)(() => Identity(b))(s).getIdentity
+}
+
+
+export function over<S, T, A, B>(l: Traversal<S, T, A, B>, f: (a: A) => B, s: S): T {
+  return l(IdentityApplicative)(compose(Identity, f))(s).getIdentity
+}
+
+
+interface First<A> {
+  getFirst: Opt<A>
+}
+function First<A>(a: Opt<A>): First<A> {
+  return {
+    getFirst: a
+  }
+}
+function FirstMonoid<A>(): Monoid<First<A>> {
+  return {
+    mempty: First(undefined as Opt<A>),
+    append(a0: First<A>): (a1: First<A>) => First<A> {
+      return a1 => a0.getFirst === undefined ? a1 : a0
+    },
   }
 }
 
-const u: User = {
-  phones: [ "13"
-          , "412"
-          , "sdfd"
-          ]
-  addr: {
-    name: "fsdgf"
-  }
+export function preview<S, A>(l: Traversal_<S, NonNullable<A>>, s: S): Opt<A> {
+  const ins = ConstApplicative(FirstMonoid<A>())
+
+  return l(ins)(a => Const(First(a)))(s).getConst.getFirst
 }
 
-console.log(set(compose(f("addr"), f("name")), "sdg", u))
+const xs: string[] = ["1", "2"]
+const l1 = ix<string>(1)
+const ret = preview(l1, xs)
+
+console.log(ret, typeof ret)

@@ -28,6 +28,10 @@ export const IdentityFunctor: Functor<IdentityHKT> = {
 
 export const IdentityApplicative: Applicative<IdentityHKT> = {
   fmap : IdentityFunctor.fmap,
-  pure : Identity,
-  ap   : fab => fa => Identity(fab.getIdentity(fa.getIdentity)),
+  pure<A>(a: A): Identity<A> {
+    return Identity(a)
+  },
+  ap<A, B>(fab: Identity<(a: A) => B>): (fa: Identity<A>) => Identity<B> {
+    return fa => Identity(fab.getIdentity(fa.getIdentity))
+  },
 }

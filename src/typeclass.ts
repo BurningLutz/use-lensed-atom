@@ -15,3 +15,13 @@ export interface Applicative<F extends HKT> extends Functor<F> {
   readonly pure: <A>(a: A) => Kind<F, A>
   readonly ap: <A, B>(fab: Kind<F, (a: A) => B>) => (fa: Kind<F, A>) => Kind<F, B>
 }
+
+
+export interface Semigroup<A> {
+  readonly append: (a0: A) => (a1: A) => A
+}
+
+
+export interface Monoid<A> extends Semigroup<A> {
+  readonly mempty: A
+}
