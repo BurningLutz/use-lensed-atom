@@ -1,10 +1,9 @@
 import { HKT, Kind } from "./hkt"
-import { Functor, Applicative, Monoid } from "./typeclass"
+import { Functor, Applicative } from "./typeclass"
+import { Opt } from "./Opt"
+import { First, FirstMonoid } from "./First"
 import { Const, ConstFunctor, ConstApplicative } from "./Const"
 import { Identity, IdentityApplicative } from "./Identity"
-
-
-type Opt<A> = NonNullable<A> | undefined
 
 
 export type LensLike<F extends HKT, S, T, A, B>
@@ -153,31 +152,18 @@ export function over<S, T, A, B>(l: Traversal<S, T, A, B>, f: (a: A) => B, s: S)
 }
 
 
-interface First<A> {
-  getFirst: Opt<A>
-}
-function First<A>(a: Opt<A>): First<A> {
-  return {
-    getFirst: a
-  }
-}
-function FirstMonoid<A>(): Monoid<First<A>> {
-  return {
-    mempty: First(undefined as Opt<A>),
-    append(a0: First<A>): (a1: First<A>) => First<A> {
-      return a1 => a0.getFirst === undefined ? a1 : a0
-    },
-  }
-}
-
 export function preview<S, A>(l: Traversal_<S, NonNullable<A>>, s: S): Opt<A> {
   const ins = ConstApplicative(FirstMonoid<A>())
 
   return l(ins)(a => Const(First(a)))(s).getConst.getFirst
 }
 
-const xs: string[] = ["1", "2"]
-const l1 = ix<string>(1)
-const ret = preview(l1, xs)
 
-console.log(ret, typeof ret)
+export function traverseOf<F extends HKT, S, T, A, B>(
+  ins : Applicative<F>,
+  l   : Traversal<S, T, A, B>,
+  f   : (a: A) => Kind<F, B>,
+  s   : S,
+): Kind<F, T> {
+  return l(ins)(f)(s)
+}

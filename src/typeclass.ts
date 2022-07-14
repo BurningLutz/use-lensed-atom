@@ -25,3 +25,13 @@ export interface Semigroup<A> {
 export interface Monoid<A> extends Semigroup<A> {
   readonly mempty: A
 }
+
+
+export interface Foldable<T extends HKT> extends TypeClass<T> {
+  readonly foldr: <A, B>(f: (a: A) => (b: B) => B) => (b: B) => (ta: Kind<T, A>) => B
+}
+
+
+export interface Traversable<T extends HKT> extends Foldable<T> {
+  readonly traverse: <F extends HKT>(ins: Applicative<F>) => <A, B>(f: (a: A) => Kind<F, B>) => (t: Kind<T, A>) => Kind<F, Kind<T, B>>
+}
