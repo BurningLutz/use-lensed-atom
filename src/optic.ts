@@ -90,14 +90,14 @@ export function ix<A>(k: number | string): Traversal_<A[], A> | Traversal_<Recor
 }
 
 
-export function at<A>(k: number): Lens_<NonNullable<A>[], Opt<A>>
-export function at<A>(k: string): Lens_<Record<string, NonNullable<A>>, Opt<A>>
-export function at<A>(k: number | string): Lens_<NonNullable<A>[], Opt<A>> | Lens_<Record<string, NonNullable<A>>, Opt<A>> {
+export function at<A>(k: number): Lens_<A[], Opt<A>>
+export function at<A>(k: string): Lens_<Record<string, A>, Opt<A>>
+export function at<A>(k: number | string): Lens_<A[], Opt<A>> | Lens_<Record<string, A>, Opt<A>> {
   if (typeof k === "number") {
     const ret =  <F extends HKT>
                  (ins: Functor<F>
             ) => (f: (a: Opt<A>) => Kind<F, Opt<A>>
-            ) => (s: NonNullable<A>[]
+            ) => (s: A[]
             ) => {
               return ins.fmap((v: Opt<A>) => {
                 const t = s.slice(0)
@@ -117,7 +117,7 @@ export function at<A>(k: number | string): Lens_<NonNullable<A>[], Opt<A>> | Len
     const ret =  <F extends HKT>
                  (ins: Functor<F>
             ) => (f: (a: Opt<A>) => Kind<F, Opt<A>>
-            ) => (s: Record<string, NonNullable<A>>
+            ) => (s: Record<string, A>
             ) => {
               return ins.fmap((v: Opt<A>) => {
                 const t = Object.assign({}, s)
@@ -152,7 +152,7 @@ export function over<S, T, A, B>(l: Traversal<S, T, A, B>, f: (a: A) => B, s: S)
 }
 
 
-export function preview<S, A>(l: Traversal_<S, NonNullable<A>>, s: S): Opt<A> {
+export function preview<S, A>(l: Traversal_<S, A>, s: S): Opt<A> {
   const ins = ConstApplicative(FirstMonoid<A>())
 
   return l(ins)(a => Const(First(a)))(s).getConst.getFirst

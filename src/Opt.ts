@@ -1,1 +1,1 @@
-export type Opt<A> = NonNullable<A> | undefined
+export type Opt<A> = A | undefined
