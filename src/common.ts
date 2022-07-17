@@ -1,6 +1,5 @@
-import { _f } from "."
 import * as Sym from "./symbol"
-import { Either } from "./type"
+import { Opt } from "./Opt"
 
 
 // A modified version of `Object.is`
@@ -50,40 +49,33 @@ export function shallowEqual(objA: any, objB: any): boolean {
   return true
 }
 
-export function left<A, B>(a: A): Either<A, B> {
-  return {
-    kind  : "Left",
-    value : a
+
+export function settterAt<A>(k: number): (s: A[]) => (b: Opt<A>) => A[]
+export function settterAt<A>(k: string): (s: Record<string, A>) => (b: Opt<A>) => Record<string, A>
+export function settterAt<A>(k: number | string): ((s: A[]) => (b: Opt<A>) => A[]) | ((s: Record<string, A>) => (b: Opt<A>) => Record<string, A>) {
+  if (typeof k === "number") {
+    return (s: A[]) => (b: Opt<A>) => {
+      const t = s.slice(0)
+
+      if (b === undefined) {
+        delete t[k]
+      } else {
+        t[k] = b
+      }
+
+      return t
+    }
+  } else {
+    return (s: Record<string, A>) => (b: Opt<A>) => {
+      const t = Object.assign({}, s)
+
+      if (b === undefined) {
+        delete t[k]
+      } else {
+        t[k] = b
+      }
+
+      return t
+    }
   }
-}
-
-export function right<A, B>(b: B): Either<A, B> {
-  return {
-    kind  : "Right",
-    value : b
-  }
-}
-
-export function updateAt<A>(i: number, x: A, xs: A[]): A[] {
-  let xs_ = xs
-
-  if (i < xs.length) {
-    xs_ = xs.slice(0)
-    xs_[i] = x
-  }
-
-  return xs_
-}
-
-export function updateAtKey<A>(k: string, x: A, mx: Record<string, A>): Record<string, A> {
-  const mx_ = {...mx, [k]: x}
-
-  return mx_
-}
-
-export function deleteAtKey<A>(k: string, mx: Record<string, A>): Record<string, A> {
-  const mx_ = {...mx}
-  delete mx_[k]
-
-  return mx_
 }

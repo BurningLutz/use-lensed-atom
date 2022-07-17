@@ -1,24 +1,15 @@
 import { HKT } from "./hkt"
-import { Functor } from "./typeclass"
+import { Applicative, Functor } from "./typeclass"
 import { Opt } from "./Opt"
 import * as O from "./optic"
 
 
-// type AtomLensType<T> = T extends any[]
-//                        ? IxedAtomLens<T> :
-//                        T extends Record<any, any>
-//                        ? IxedAtomLens<T> :
-//                        T extends object
-//                        ? ObjectAtomLens<T> :
-//                          AtomLens<T>
-
-
 export interface AtomLens<S> {
-  view    : () => S
-  set     : (s: S) => void
-  over    : (f: (s: S) => S) => void
-  c       : <A>(l: O.Lens_<S, A>) => AtomLens<A>
-  compose : <A>(l: O.Lens_<S, A>) => AtomLens<A>
+  view(): S
+  set(s: S): void
+  over(f: (s: S) => S): void
+  compose<A>(l: O.Lens_<S, A>): AtomLens<A>
+  compose<A>(l: O.Traversal_<S, A>): AtomTraversal<A>
 }
 
 
@@ -39,10 +30,17 @@ export function AtomLens<S, A>(
     setRoot(s => O.over(l, f, s))
   }
 
-  function compose<B>(o: O.Lens_<A, B>): AtomLens<B> {
-    const c = <F extends HKT>(ins: Functor<F>) => O.compose(l(ins), o(ins))
+  function compose<B>(o: O.Lens_<A, B>): AtomLens<B>
+  function compose<B>(o: O.Traversal_<A, B>): AtomTraversal<B>
+  function compose<B>(o: O.Lens_<A, B> | O.Traversal_<A, B>): AtomLens<B> | AtomTraversal<B> {
+    if ("lens" in o) {
+      const c = <F extends HKT>(ins: Functor<F>) => O.compose(l(ins), o(ins))
 
-    return AtomLens(getRoot, setRoot, c)
+      return AtomLens(getRoot, setRoot, c)
+    } else {
+      const c = <F extends HKT>(ins: Applicative<F>) => O.compose(l(ins), o(ins))
+      return AtomTraversal(getRoot, setRoot, c)
+    }
   }
 
   return { view, set, over, compose, c: compose }

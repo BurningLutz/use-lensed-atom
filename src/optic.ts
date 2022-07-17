@@ -1,3 +1,5 @@
+import * as Sym from "./symbol"
+import { settterAt } from "./common"
 import { HKT, Kind } from "./hkt"
 import { Functor, Applicative } from "./typeclass"
 import { Opt } from "./Opt"
@@ -12,13 +14,20 @@ export type LensLike<F extends HKT, S, T, A, B>
   => Kind<F, T>
 
 
-export type Lens<S, T, A, B> =  <F extends HKT>(ins: Functor<F>)
-                             => LensLike<F, S, T, A, B>
+export type Lens<S, T, A, B> = (  <F extends HKT>(ins: Functor<F>)
+                               => LensLike<F, S, T, A, B>
+                               ) & {
+                                 [Sym.lens]      : true
+                                 [Sym.traversal] : true
+                               }
 export type Lens_<S, A> = Lens<S, S, A, A>
 
 
-export type Traversal<S, T, A, B> =  <F extends HKT>(ins: Applicative<F>)
-                                  => LensLike<F, S, T, A, B>
+export type Traversal<S, T, A, B> = (  <F extends HKT>(ins: Applicative<F>)
+                                    => LensLike<F, S, T, A, B>
+                                    ) & {
+                                      [Sym.traversal] : true
+                                    }
 export type Traversal_<S, A> = Traversal<S, S, A, A>
 
 
@@ -27,16 +36,37 @@ export function compose<A, B, C>(f: (a: B) => C, g: (b: A) => B): (a: A) => C {
 }
 
 
-export function lens<S, T, A, B>(getter: (s: S) => A, setter: (s: S) => (b: B) => T): Lens<S, T, A, B> {
-  const ret =  <F extends HKT>
-               (ins: Functor<F>
-          ) => (f: (a: A) => Kind<F, B>
-          ) => (s: S
-          ) => {
-            return ins.fmap(setter(s))(f(getter(s)))
-          }
+export function tagLens<S, T, A, B>(
+  l: <F extends HKT>(ins: Functor<F>) => LensLike<F, S, T, A, B>
+): Lens<S, T, A, B> {
+  return Object.assign( l
+                      , { [Sym.lens]      : true as true
+                        , [Sym.traversal] : true as true
+                        }
+                      )
+}
 
-  return ret
+
+export function tagTraversal<S, T, A, B>(
+  l: <F extends HKT>(ins: Applicative<F>) => LensLike<F, S, T, A, B>
+): Traversal<S, T, A, B> {
+  return Object.assign( l
+                      , { [Sym.traversal] : true as true
+                        }
+                      )
+}
+
+
+export function lens<S, T, A, B>(getter: (s: S) => A, setter: (s: S) => (b: B) => T): Lens<S, T, A, B> {
+  const l =  <F extends HKT>
+             (ins: Functor<F>
+        ) => (f: (a: A) => Kind<F, B>
+        ) => (s: S
+        ) => {
+          return ins.fmap(setter(s))(f(getter(s)))
+        }
+
+  return tagLens(l)
 }
 
 
@@ -94,45 +124,15 @@ export function at<A>(k: number): Lens_<A[], Opt<A>>
 export function at<A>(k: string): Lens_<Record<string, A>, Opt<A>>
 export function at<A>(k: number | string): Lens_<A[], Opt<A>> | Lens_<Record<string, A>, Opt<A>> {
   if (typeof k === "number") {
-    const ret =  <F extends HKT>
-                 (ins: Functor<F>
-            ) => (f: (a: Opt<A>) => Kind<F, Opt<A>>
-            ) => (s: A[]
-            ) => {
-              return ins.fmap((v: Opt<A>) => {
-                const t = s.slice(0)
+    const getter = (s: A[]) => s[k]
+    const setter = settterAt<A>(k)
 
-                if (v === undefined) {
-                  delete t[k]
-                } else {
-                  t[k] = v
-                }
-
-                return t
-              })(f(s[k]))
-            }
-
-    return ret
+    return lens(getter, setter)
   } else {
-    const ret =  <F extends HKT>
-                 (ins: Functor<F>
-            ) => (f: (a: Opt<A>) => Kind<F, Opt<A>>
-            ) => (s: Record<string, A>
-            ) => {
-              return ins.fmap((v: Opt<A>) => {
-                const t = Object.assign({}, s)
+    const getter = (s: Record<string, A>) => s[k]
+    const setter = settterAt<A>(k)
 
-                if (v === undefined) {
-                  delete t[k]
-                } else {
-                  t[k] = v
-                }
-
-                return t
-              })(f(s[k]))
-            }
-
-    return ret
+    return lens(getter, setter)
   }
 }
 
