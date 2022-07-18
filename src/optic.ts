@@ -96,7 +96,7 @@ export function ix<A>(k: number | string): Traversal_<A[], A> | Traversal_<Recor
               }
             }
 
-    return ret
+    return tagTraversal<A[], A[], A, A>(ret)
   } else {
     const ret =  <F extends HKT>
                  (ins: Applicative<F>
@@ -115,7 +115,7 @@ export function ix<A>(k: number | string): Traversal_<A[], A> | Traversal_<Recor
               }
             }
 
-    return ret
+    return tagTraversal<Record<string, A>, Record<string, A>, A, A>(ret)
   }
 }
 
@@ -156,14 +156,4 @@ export function preview<S, A>(l: Traversal_<S, A>, s: S): Opt<A> {
   const ins = ConstApplicative(FirstMonoid<A>())
 
   return l(ins)(a => Const(First(a)))(s).getConst.getFirst
-}
-
-
-export function traverseOf<F extends HKT, S, T, A, B>(
-  ins : Applicative<F>,
-  l   : Traversal<S, T, A, B>,
-  f   : (a: A) => Kind<F, B>,
-  s   : S,
-): Kind<F, T> {
-  return l(ins)(f)(s)
 }

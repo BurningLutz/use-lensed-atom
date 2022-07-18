@@ -2,6 +2,7 @@ import { HKT } from "./hkt"
 import { Applicative, Functor } from "./typeclass"
 import { Opt } from "./Opt"
 import * as O from "./optic"
+import * as Sym from "./symbol"
 
 
 export interface AtomLens<S> {
@@ -10,6 +11,8 @@ export interface AtomLens<S> {
   over(f: (s: S) => S): void
   compose<A>(l: O.Lens_<S, A>): AtomLens<A>
   compose<A>(l: O.Traversal_<S, A>): AtomTraversal<A>
+  c<A>(l: O.Lens_<S, A>): AtomLens<A>
+  c<A>(l: O.Traversal_<S, A>): AtomTraversal<A>
 }
 
 
@@ -33,13 +36,20 @@ export function AtomLens<S, A>(
   function compose<B>(o: O.Lens_<A, B>): AtomLens<B>
   function compose<B>(o: O.Traversal_<A, B>): AtomTraversal<B>
   function compose<B>(o: O.Lens_<A, B> | O.Traversal_<A, B>): AtomLens<B> | AtomTraversal<B> {
-    if ("lens" in o) {
-      const c = <F extends HKT>(ins: Functor<F>) => O.compose(l(ins), o(ins))
+    if (Sym.lens in o) {
+      const c =  <F extends HKT>(ins: Functor<F>
+            ) => O.compose( l(ins)
+                          , (o as O.Lens_<A, B>)(ins)
+                          )
 
-      return AtomLens(getRoot, setRoot, c)
+      return AtomLens(getRoot, setRoot, O.tagLens(c))
     } else {
-      const c = <F extends HKT>(ins: Applicative<F>) => O.compose(l(ins), o(ins))
-      return AtomTraversal(getRoot, setRoot, c)
+      const c =  <F extends HKT>(ins: Applicative<F>
+            ) => O.compose( l(ins)
+                          , (o as O.Traversal_<A, B>)(ins)
+                          )
+
+      return AtomTraversal(getRoot, setRoot, O.tagTraversal(c))
     }
   }
 
@@ -51,6 +61,10 @@ export interface AtomTraversal<S> {
   preview : () => Opt<S>
   set     : (s: S) => void
   over    : (f: (s: S) => S) => void
+  compose<A>(l: O.Lens_<S, A>): AtomTraversal<A>
+  compose<A>(l: O.Traversal_<S, A>): AtomTraversal<A>
+  c<A>(l: O.Lens_<S, A>): AtomTraversal<A>
+  c<A>(l: O.Traversal_<S, A>): AtomTraversal<A>
 }
 
 
@@ -71,5 +85,13 @@ function AtomTraversal<S, A>(
     setRoot(s => O.over(l, f, s))
   }
 
-  return { preview, set, over }
+  function compose<B>(o: O.Lens_<A, B>): AtomTraversal<B>
+  function compose<B>(o: O.Traversal_<A, B>): AtomTraversal<B>
+  function compose<B>(o: O.Lens_<A, B> | O.Traversal_<A, B>): AtomTraversal<B> {
+    const c = <F extends HKT>(ins: Applicative<F>) => O.compose(l(ins), o(ins))
+
+    return AtomTraversal(getRoot, setRoot, O.tagTraversal(c))
+  }
+
+  return { preview, set, over, compose, c: compose }
 }
