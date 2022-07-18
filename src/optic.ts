@@ -1,5 +1,5 @@
 import * as Sym from "./symbol"
-import { settterAt } from "./common"
+import { settterAt, updateIx } from "./common"
 import { HKT, Kind } from "./hkt"
 import { Functor, Applicative } from "./typeclass"
 import { Opt } from "./Opt"
@@ -70,6 +70,11 @@ export function lens<S, T, A, B>(getter: (s: S) => A, setter: (s: S) => (b: B) =
 }
 
 
+export function id<A>(): Lens_<A, A> {
+  return lens(a => a, (_) => a => a)
+}
+
+
 export function f<K extends keyof R, R>(k: K): Lens<R, R, R[K], R[K]> {
   return lens<R, R, R[K], R[K]>(r => r[k], r => b => ({ ...r, [k]: b }))
 }
@@ -85,12 +90,7 @@ export function ix<A>(k: number | string): Traversal_<A[], A> | Traversal_<Recor
             ) => (s: A[]
             ) => {
               if (k in s) {
-                return ins.fmap((v: A) => {
-                  const t = s.slice(0)
-                  t[k]    = v
-
-                  return t
-                })(f(s[k]))
+                return ins.fmap((v: A) => updateIx(k, v, s))(f(s[k]))
               } else {
                 return ins.pure(s)
               }
@@ -104,12 +104,7 @@ export function ix<A>(k: number | string): Traversal_<A[], A> | Traversal_<Recor
             ) => (s: Record<string, A>
             ) => {
               if (k in s) {
-                return ins.fmap((v: A) => {
-                  const t = Object.assign({}, s)
-                  t[k]    = v
-
-                  return t
-                })(f(s[k]))
+                return ins.fmap((v: A) => updateIx(k, v, s))(f(s[k]))
               } else {
                 return ins.pure(s)
               }

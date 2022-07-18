@@ -79,3 +79,20 @@ export function settterAt<A>(k: number | string): ((s: A[]) => (b: Opt<A>) => A[
     }
   }
 }
+
+
+export function updateIx<A>(ix: number, x: A, xs: A[]): A[]
+export function updateIx<A>(ix: string, x: A, xs: Record<string, A>): Record<string, A>
+export function updateIx<A>(ix: number | string, x: A, xs: A[] | Record<string, A>): A[] | Record<string, A> {
+  if (typeof ix === "number") {
+    const xs_ = (xs as A[]).slice(0)
+    xs_[ix]   = x
+
+    return xs_
+  } else {
+    const xs_ = Object.assign({}, (xs as Record<string, A>))
+    xs_[ix]   = x
+
+    return xs_
+  }
+}

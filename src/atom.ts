@@ -3,6 +3,7 @@ import { Applicative, Functor } from "./typeclass"
 import { Opt } from "./Opt"
 import * as O from "./optic"
 import * as Sym from "./symbol"
+import { updateIx } from "./common"
 
 
 export interface AtomLens<S> {
@@ -94,4 +95,13 @@ function AtomTraversal<S, A>(
   }
 
   return { preview, set, over, compose, c: compose }
+}
+
+
+export function sequence<A>(atom: AtomLens<A[]>): AtomLens<A>[] {
+  return atom.view().map((x, ix) => AtomLens(
+    ( ) => x,
+    (f) => atom.over(xs => updateIx(ix, f(x), xs)),
+    O.id(),
+  ))
 }
