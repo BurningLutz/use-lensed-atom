@@ -1,11 +1,11 @@
 import { useState } from "react"
 
-import { Atom } from "./type"
-import { atomView } from "./atom"
+import { id } from "./optic"
+import { AtomLens } from "./atom"
 
 
-export function useAtom<S>(init: S): Atom<S> {
+export function useAtom<S>(init: S): AtomLens<S> {
   const [s, modify] = useState(init)
 
-  return atomView(() => s, modify)
+  return AtomLens(() => s, modify, id())
 }

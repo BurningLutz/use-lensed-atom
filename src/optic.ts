@@ -1,4 +1,3 @@
-import * as Sym from "./symbol"
 import { settterAt, updateIx } from "./common"
 import { HKT, Kind } from "./hkt"
 import { Functor, Applicative } from "./typeclass"
@@ -17,8 +16,8 @@ export type LensLike<F extends HKT, S, T, A, B>
 export type Lens<S, T, A, B> = (  <F extends HKT>(ins: Functor<F>)
                                => LensLike<F, S, T, A, B>
                                ) & {
-                                 [Sym.lens]      : true
-                                 [Sym.traversal] : true
+                                 __lens__      : true
+                                 __traversal__ : true
                                }
 export type Lens_<S, A> = Lens<S, S, A, A>
 
@@ -26,7 +25,7 @@ export type Lens_<S, A> = Lens<S, S, A, A>
 export type Traversal<S, T, A, B> = (  <F extends HKT>(ins: Applicative<F>)
                                     => LensLike<F, S, T, A, B>
                                     ) & {
-                                      [Sym.traversal] : true
+                                      __traversal__ : true
                                     }
 export type Traversal_<S, A> = Traversal<S, S, A, A>
 
@@ -40,8 +39,8 @@ export function tagLens<S, T, A, B>(
   l: <F extends HKT>(ins: Functor<F>) => LensLike<F, S, T, A, B>
 ): Lens<S, T, A, B> {
   return Object.assign( l
-                      , { [Sym.lens]      : true as true
-                        , [Sym.traversal] : true as true
+                      , { __lens__      : true as true
+                        , __traversal__ : true as true
                         }
                       )
 }
@@ -51,7 +50,7 @@ export function tagTraversal<S, T, A, B>(
   l: <F extends HKT>(ins: Applicative<F>) => LensLike<F, S, T, A, B>
 ): Traversal<S, T, A, B> {
   return Object.assign( l
-                      , { [Sym.traversal] : true as true
+                      , { __traversal__ : true as true
                         }
                       )
 }
