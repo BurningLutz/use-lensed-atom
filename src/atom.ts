@@ -12,14 +12,14 @@ export interface Atom {
 
 
 export interface AtomLens<S> extends Atom {
-  kind : "AtomLens"
-  view : () => S
-  set  : (s: S) => void
-  over : (f: (s: S) => S) => void
-  compose<A>(l: O.Lens_<S, A>): AtomLens<A>
-  compose<A>(l: O.Traversal_<S, A>): AtomTraversal<A>
+  __kind__ : "AtomLens"
+  view(): S
   c<A>(l: O.Lens_<S, A>): AtomLens<A>
   c<A>(l: O.Traversal_<S, A>): AtomTraversal<A>
+  set(s: S): void
+  over(f: (s: S) => S): void
+  compose<A>(l: O.Lens_<S, A>): AtomLens<A>
+  compose<A>(l: O.Traversal_<S, A>): AtomTraversal<A>
 }
 
 
@@ -63,7 +63,7 @@ export function AtomLens<S, A>(
 
   return {
     [Sym.atom] : Sym.atom,
-    kind       : "AtomLens",
+    __kind__   : "AtomLens",
     c          : compose,
     view,
     set,
@@ -74,12 +74,12 @@ export function AtomLens<S, A>(
 
 
 export interface AtomTraversal<S> extends Atom {
-  kind    : "AtomTraversal"
-  preview : () => Opt<S>
-  set     : (s: S) => void
-  over    : (f: (s: S) => S) => void
-  compose<A>(l: O.Traversal_<S, A>): AtomTraversal<A>
+  __kind__ : "AtomTraversal"
+  preview(): Opt<S>
   c<A>(l: O.Traversal_<S, A>): AtomTraversal<A>
+  set(s: S): void
+  over(f: (s: S) => S): void
+  compose<A>(l: O.Traversal_<S, A>): AtomTraversal<A>
 }
 
 
@@ -113,7 +113,7 @@ function AtomTraversal<S, A>(
 
   return {
     [Sym.atom] : Sym.atom,
-    kind       : "AtomTraversal",
+    __kind__   : "AtomTraversal",
     c          : compose,
     preview,
     set,
@@ -127,7 +127,7 @@ export function sequence<A>(atom: AtomLens<A[]>): AtomLens<A>[]
 export function sequence<A>(atom: AtomTraversal<A[]>): AtomTraversal<A>[]
 export function sequence<A>(atom: AtomLens<A[]> | AtomTraversal<A[]>): AtomLens<A>[] | AtomTraversal<A>[] {
   let sec
-  if (atom.kind === "AtomLens") {
+  if (atom.__kind__ === "AtomLens") {
     sec = atom.view()
   } else {
     sec = atom.preview() || []
@@ -145,7 +145,7 @@ export function sequenceRec<A>(atom: AtomLens<Record<string, A>>): Record<string
 export function sequenceRec<A>(atom: AtomTraversal<Record<string, A>>): Record<string, AtomTraversal<A>>
 export function sequenceRec<A>(atom: AtomLens<Record<string, A>> | AtomTraversal<Record<string, A>>): Record<string, AtomLens<A>> | Record<string, AtomTraversal<A>> {
   let obj
-  if (atom.kind === "AtomLens") {
+  if (atom.__kind__ === "AtomLens") {
     obj = atom.view()
   } else {
     obj = atom.preview() || {}

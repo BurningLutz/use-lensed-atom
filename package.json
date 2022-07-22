@@ -1,7 +1,7 @@
 {
   "name": "use-lensed-atom",
-  "version": "2.0.0",
-  "description": "A React Hook supporting lensed atom.",
+  "version": "3.0.0-alpha",
+  "description": "A React Hook that supports lensed atom.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -32,10 +32,10 @@
     "react": ">=16.8.0"
   },
   "devDependencies": {
-    "@types/mocha": "^8.2.3",
-    "@types/react": "^17.0.11",
-    "fast-check": "^2.17.0",
-    "ts-mocha": "^8.0.0",
-    "typescript": "^4.3.4"
+    "@types/mocha": "^9.1.1",
+    "@types/react": "^18.0.15",
+    "fast-check": "^3.0.1",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^4.7.4"
   }
 }

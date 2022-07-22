@@ -1,4 +1,5 @@
-import { memo, Atom, toList } from "use-lensed-atom"
+import { useCallback } from "react"
+import { memo, AtomLens, sequence, f, at } from "use-lensed-atom"
 
 
 type Goods = {
@@ -6,49 +7,50 @@ type Goods = {
   count : number
 }
 type GoodsItemProps = {
-  aItem    : Atom<Goods>
+  id       : number
+  aItem    : AtomLens<Goods>
   readonly : boolean
-  onRemove : () => void
+  onRemove : (idx: number) => void
 }
 type GoodsListProps = {
-  aItems   : Atom<Goods[]>
+  aItems   : AtomLens<Goods[]>
   readonly : boolean
 }
 
-const GoodsItem = memo(function GoodsItem({ aItem, readonly, onRemove }: GoodsItemProps) {
-  const aName  = aItem.vf("name")
-  const aCount = aItem.vf("count")
+const GoodsItem = memo(function GoodsItem({ id, aItem, readonly, onRemove }: GoodsItemProps) {
+  const aName  = aItem.c(f("name"))
+  const aCount = aItem.c(f("count"))
 
   return (
     <div className="flex justify-between">
       { readonly
       ? <>
-          <span>{aName.get()}</span>
-          <span>{aCount.get()}</span>
+          <span>{aName.view()}</span>
+          <span>{aCount.view()}</span>
         </>
       : <>
           <input
-            className="grow"
-            placeholder="Please enter goods name."
-            type="text"
-            value={aName.get()}
-            onInput={e => aName.set(e.currentTarget.value)}
+            className   = "grow"
+            placeholder = "Please enter goods name."
+            type        = "text"
+            value       = {aName.view()}
+            onChange    = {e => aName.set(e.target.value)}
           />
           <div className="goods-action flex align-center justify-end">
             <button
-              className="link"
-              onClick={() => aCount.over(x => x > 0 ? x - 1 : x)}>
+              className = "link"
+              onClick   = {() => aCount.over(x => x > 0 ? x - 1 : x)}>
               -
             </button>
-            <span>{aCount.get()}</span>
+            <span>{aCount.view()}</span>
             <button
-              className="link"
-              onClick={() => aCount.over(x => x + 1)}>
+              className = "link"
+              onClick   = {() => aCount.over(x => x + 1)}>
               +
             </button>
             <button
-              className="link"
-              onClick={onRemove}>
+              className = "link"
+              onClick   = {() => onRemove(id)}>
               x
             </button>
           </div>
@@ -59,20 +61,20 @@ const GoodsItem = memo(function GoodsItem({ aItem, readonly, onRemove }: GoodsIt
 })
 
 export default memo(function GoodsList({ aItems, readonly }: GoodsListProps) {
-  function removeAt(idx: number) {
-    aItems.over(items => items.filter((_, idx_) => idx_ !== idx))
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const removeAt = useCallback((idx: number) => aItems.c(at(idx)).set(undefined), [])
 
   return (
     <div className="flex-col grow justify-center align-start">
       <ul className="goods">
-        { toList(aItems).map((aItem, idx) => {
+        { sequence(aItems).map((aItem, idx) => {
           return (
             <li key={idx} className="goods-item">
               <GoodsItem
+                id       = {idx}
                 aItem    = {aItem}
                 readonly = {readonly}
-                onRemove = {() => removeAt(idx)}
+                onRemove = {removeAt}
               />
             </li>
           )
@@ -80,8 +82,8 @@ export default memo(function GoodsList({ aItems, readonly }: GoodsListProps) {
       </ul>
       { !readonly &&
         <button
-          className="link"
-          onClick={() => aItems.over(items => [...items, { name: "", count: 0 }])}
+          className = "link"
+          onClick   = {() => aItems.c(at(aItems.view().length)).set({ name: "", count: 0 })}
         >
           MORE
         </button>

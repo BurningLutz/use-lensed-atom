@@ -27,7 +27,7 @@ function ShoppingList() {
 
   const { addr: aAddr, readonly: aReadonly, items: aItems } = destructure(gstate)
 
-  console.log(gstate.get())
+  console.log(gstate.view())
 
   return (
     <div className="app">
@@ -38,11 +38,11 @@ function ShoppingList() {
       <div className="goods-list">
         <div className="flex">
           <div className="goods-label flex align-center justify-center">Addr.</div>
-          <Title aAddr={aAddr} readonly={aReadonly.get()} />
+          <Title aAddr={aAddr} readonly={aReadonly.view()} />
         </div>
         <div className="flex">
           <div className="goods-label flex align-center justify-center">Goods</div>
-          <GoodsList aItems={aItems} readonly={aReadonly.get()} />
+          <GoodsList aItems={aItems} readonly={aReadonly.view()} />
         </div>
       </div>
     </div>

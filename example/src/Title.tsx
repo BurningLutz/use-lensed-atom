@@ -1,8 +1,8 @@
-import { Atom, memo } from "use-lensed-atom"
+import { AtomLens, memo } from "use-lensed-atom"
 
 
 type TitleProps = {
-  aAddr    : Atom<string>
+  aAddr    : AtomLens<string>
   readonly : boolean
 }
 
@@ -10,13 +10,13 @@ export default memo(function Title({ aAddr, readonly }: TitleProps) {
   return (
     <div className="flex grow align-center">
       { readonly
-      ? <span className="title">{aAddr.get()}</span>
+      ? <span className="title">{aAddr.view()}</span>
       : <input
           className   = "title-input grow"
           placeholder = "Please enter address."
           type        = "text"
-          value       = {aAddr.get()}
-          onInput     = {e => aAddr.set(e.currentTarget.value)}
+          value       = {aAddr.view()}
+          onChange    = {e => aAddr.set(e.target.value)}
         />
       }
     </div>

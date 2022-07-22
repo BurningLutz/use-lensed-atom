@@ -5,8 +5,9 @@ import { Opt } from "./Opt"
 // A modified version of `Object.is`
 function is(x: any, y: any): boolean {
   if (x[Sym.atom] === Sym.atom && y[Sym.atom] === Sym.atom) {
-    x = x.get()
-    y = y.get()
+    // WARN memoizing AtomTraversal seems to be weird here.
+    x = x.view !== undefined ? x.view() : x.preview()
+    y = y.view !== undefined ? y.view() : y.preview()
   }
 
   if (x === y) {
